@@ -1,0 +1,410 @@
+---
+title: "Data visualisation"
+author: "Ihsan Khaliq"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data visualisation}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+knitr::opts_chunk$set(progress = TRUE, verbose = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.width = 9,
+  fig.height = 9,
+  fig.align = "center"
+)
+```
+
+Load libraries
+
+```{r message=FALSE, echo=TRUE, warning=FALSE}
+library("grDevices")
+library("tidyverse")
+library("viridis")
+library("showtext")
+library("here")
+library("ggpubr")
+library("extrafont")
+library("kableExtra")
+library("tidyr")
+library("lubridate")
+library("readxl")
+library("ggbeeswarm")
+
+theme_set(theme_pubclean(base_family = "Arial", base_size = 14))
+```
+
+
+```{r fonts, include=FALSE, message=FALSE, eval=FALSE, message=FALSE}
+# Note that GhostScript needs to be installed at the system level for the PS
+# files to be generated. MacOS users can use `brew install ghostscript`
+#
+# Windows users can follow these directions: 1.	Go to the GhostScript website
+# (https://www.ghostscript.com/download/gsdnld.html) 2.	Download the windows
+# installer suitable for your machine 3.	Run the installer file which you
+# downloaded and follow the prompts 4.	After running the installer click the
+# windows "Start" button and type "Edit environment variables for your account"
+# and open 5.	In the tab 'Advanced' click the button at the bottom 'Environment
+# Variables...' 6.	Under 'System variables' find the variable 'Path', select
+# 'Path' and click the 'Edit' button 7. 	Select a new line and copy the
+# Ghostscript 'bin' folder location into the field. 7.1	If you installed
+# ghostscript to the default folder location; then the folder location will
+# likely be "C:\Program Files\gs\gs9.52\bin", the version number (9.52) may
+# differ. 8.	Save and exit the environmental variables window This chunk is then
+# run only if knitting on new computer that the files have not been generated on
+# this is necessary to embed fonts in .eps files
+library("extrafont")
+if (.Platform$OS.type == "windows") {
+   font_import(pattern = "arial", prompt = FALSE)
+   loadfonts(device = "postscript", quiet = TRUE)
+} else {
+   font_import(pattern = "Arial", prompt = FALSE)
+   loadfonts(device = "postscript", quiet = TRUE)
+}
+```
+
+
+
+### Import disease data 
+
+```{r import-seasonal-assessments-data}
+dt_seasonal <-
+  read_excel("data/fungicides_data.xlsx", sheet = 2) %>%
+  mutate(across(where(is.character), as.factor)) %>%
+  mutate(trial_duration = as.integer(trial_duration)) %>%
+  select(
+    assessment_date,
+    assessment_num,
+    year,
+    avg_severity_plot,
+    avg_severity_treatment,
+    diseased_plants_plot,
+    perc_incidence_plot,
+    perc_incidence_treatment,
+    trial_duration
+  ) %>%
+  dplyr::mutate(severity = avg_severity_treatment / 100) %>%
+  dplyr::mutate(disease_severity = avg_severity_plot / 100)
+```
+
+
+
+### Import weather data
+
+Import weather data and average weather variables by growing season.
+
+```{r import-seasonal-weather-data}
+# Calculations over assessment periods
+weather_dt_seasonal <-
+  read_excel("data/fungicides_data_dailyweather_suffruticosaonly.xlsx",
+             sheet = 1) %>%
+  dplyr::mutate(assessment_num = as.factor(assessment_num)) %>%
+  mutate_if(is.character, as.factor) %>%
+  group_by(year) %>%
+  summarise(
+    min_rh = round(mean(min_rh), 1),
+    max_rh = round(mean(max_rh), 1),
+    mean_rh = round(mean(mean_rh), 1),
+    min_temp = round(mean(min_temp), 1),
+    max_temp = round(mean(max_temp), 1),
+    mean_temp = round(mean(mean_temp), 1),
+    diurnal_temp = round(max_temp - min_temp, 1),
+    min_ws = round(mean(min_ws), 1),
+    max_ws = round(mean(max_ws), 1),
+    mean_ws = round(mean(mean_ws), 1),
+    mean_rain = round(mean(precipitation), 1),
+    total_rain = round(sum(precipitation), 1),
+    total_days = length(unique(date)),
+    precip_days = sum(precipitation == "0"),
+    # rainless days
+    rainy_days = total_days - precip_days,
+    perc_rainy_days = rainy_days / total_days * 100,
+    avg_daily_rain = round(total_rain / rainy_days, 1),
+    rain_everyday = total_rain / total_days
+  )
+
+# Filter rainy days to calculate wind speed and temp during rainy days.
+
+weather_dat_rain <-
+  read_excel("data/fungicides_data_dailyweather_suffruticosaonly.xlsx",
+             sheet = 1) %>%
+  select(
+    !c(
+      assessment_num_orig,
+      assessment_num,
+      cultivar,
+      mean_rh,
+      min_rh,
+      max_rh,
+      mean,
+      min,
+      max
+    )
+  ) %>%
+  mutate_if(is.character, as.factor) %>%
+  filter(precipitation > 0) %>%
+  group_by(year) %>%
+  summarise(min_temp_rain = round(mean(min_temp), 1),
+            max_ws_rain = round(mean(max_ws), 1))
+
+# Filter rainless days to calculate RH during rainless days.
+
+weather_dat_no_rain <-
+  read_excel("data/fungicides_data_dailyweather_suffruticosaonly.xlsx",
+             sheet = 1) %>%
+  select(mean_rh, min_rh, max_rh, precipitation, year) %>%
+  mutate_if(is.character, as.factor) %>%
+  filter(precipitation == 0) %>%
+  group_by(year) %>%
+  summarise(max_rh_dry = round(mean(max_rh), 1),
+            mean_rh_dry = round(mean(mean_rh), 1))
+
+# Combine data weather data during rainy and rain less periods
+
+combined <-
+  left_join(weather_dat_rain, weather_dat_no_rain, by = "year")
+
+
+# Sort weather data for RH > 65 & below 65%
+weather_dat_exposure <-
+  read_excel("data/fungicides_data_dailyweather_suffruticosaonly.xlsx",
+             sheet = 1) %>%
+  select(min_rh, year) %>%
+  mutate_if(is.character, as.factor) %>%
+  dplyr::group_by(year) %>%
+  dplyr::mutate(humidity_catog = as.factor(case_when(min_rh < 65 ~ "RH1",
+                                                     min_rh >= 65 ~ "RH2")))
+
+# Count each RH category
+weather_dat_exposure_rh <- weather_dat_exposure %>%
+  group_by(year, humidity_catog) %>%
+  summarize(humidity_count = n()) %>%
+  pivot_wider(names_from = humidity_catog, values_from = humidity_count)
+
+# Combine with weather data
+combined_rh <-
+  left_join(combined,  weather_dat_exposure_rh, by = "year")
+
+# Combine data weather data during rainy and rain less periods with weather recorded over entire duration
+weather_dat_seasonal <-
+  left_join(weather_dt_seasonal, combined_rh, by = "year")
+```
+
+
+### Cobmine data
+
+Combine seasonal disease assessment data with the corresponding weather data averaged by growing season.
+
+```{r combine-seasonal-data}
+dat_seasonal <-
+  left_join(dt_seasonal, weather_dat_seasonal, by = "year") %>%
+  select(!c(assessment_date,  assessment_num, trial_duration)) %>%
+  select(year, everything())
+```
+
+
+Check the data and export the table to excel
+
+```{r kable-data-by-season}
+kable(dat_seasonal,
+      format = "html",
+      table.attr = "class='table table-hover'")
+```
+
+
+
+### Kernel density plot for disease severity
+
+Kernel density plot to visualize the distribution of disease severity. 
+
+```{r data-distribution-severity, fig.cap="Density plot showing average severity over assessment periods.", message=FALSE, warning=FALSE}
+ggplot(dat_seasonal, aes(x = disease_severity)) +
+  geom_density(fill = "steelblue", alpha = 0.7) +
+  geom_rug(alpha = 0.4) +
+  xlab("Disease severity")
+```
+
+
+
+### Box plot (Mean rain per rainy day - by growing season)
+
+Box plot showing the interaction between average severity, total rainfall and the growing season of the year
+
+```{r boxplot-plot, fig.cap="Box plot showing the relationship between growing season of the year, mean rainfall per rainy day and disease severity.", message=FALSE, warning=FALSE}
+fig_1 <- ggplot(
+  dat_seasonal,
+  aes(
+    x = as.factor(year),
+    y = disease_severity,
+    group = as.factor(year),
+    colour = avg_daily_rain,
+    fill = avg_daily_rain
+  )
+) +
+  geom_boxplot(alpha = 0.4,
+               outlier.size = 0) +
+  geom_point(size = 5,
+             position = position_jitterdodge()) +
+  scale_colour_viridis_c(direction = -1,
+                         name = "Mean rain per rainy day (mm)") +
+  scale_fill_viridis_c(direction = -1,
+                       name = "Mean rain per rainy day (mm)") +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.25),
+                     limits = c(0, 1)) +
+  labs(x = "Year",
+       y = "Disease severity") +
+  guides(color = guide_colorbar(
+    title.position = "top",
+    title.hjust = 0.5,
+    barwidth = unit(20, "lines"),
+    barheight = unit(0.5, "lines")
+  )) +
+  theme(legend.key = element_blank(),
+        plot.margin = margin(25, 25, 10, 25)) +
+  coord_cartesian(clip = "off",
+                  expand = FALSE)
+fig_1
+```
+
+
+
+```{r save-fig-1, include=FALSE, eval=FALSE}
+ggsave(
+  here("man", "figures/fig_1.png"),
+  plot = fig_1,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600
+)
+ggsave(
+  here("man", "figures/fig_1.eps"),
+  plot = fig_1,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600,
+  device =  cairo_ps
+)
+```
+
+
+
+### Scatter plot (Mean rain per rainy day and wind speed interactions over growing seasons)
+
+```{r plot-severity-rain-wind-speed-season, fig.cap="Scatter plot showing interactions between mean rain per rainy day and daily mean maximum wind speed over growing seasons.", message=FALSE, warning=FALSE}
+fig_S2 <- ggplot(dat_seasonal,
+                 aes(x = avg_daily_rain, y = disease_severity, color = max_ws)) +
+  geom_point(size = 5,
+             position = position_jitterdodge()) +
+  scale_colour_viridis_c(direction = -1,
+                         name = "Daily mean maximum wind speed (m/s)") +
+  scale_fill_viridis_c(direction = -1,
+                       name = "Daily mean maximum wind speed (m/s)") +
+  scale_x_continuous(breaks = seq(2.8, 6.5, length.out = 6),
+                     labels = sprintf("%0.1f", seq(2.8, 6.5, length.out = 6))) +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.25),
+                     limits = c(0, 1)) +
+  labs(x = "Mean rain per rainy day (mm)", y = "Disease severity") +
+  guides(color = guide_colorbar(
+    title.position = "top",
+    title.hjust = 0.5,
+    barwidth = unit(20, "lines"),
+    barheight = unit(0.5, "lines")
+  )) +
+  theme(legend.key = element_blank(),
+        plot.margin = margin(25, 25, 10, 25)) +
+  coord_cartesian(clip = "off",
+                  expand = FALSE)
+fig_S2 
+```
+
+
+
+```{r save-fig-S2, include=FALSE, eval=FALSE}
+ggsave(
+  here("man", "figures/fig_S2.png"),
+  plot = fig_S2,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600
+)
+ggsave(
+  here("man", "figures/fig_S2.eps"),
+  plot = fig_S2,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600,
+  device =  cairo_ps
+)
+```
+
+
+
+### Scatter plot (average relative humidity and temperature interactions by growing seasons)
+
+```{r scatter-plot-temp-humid-temp-season, fig.cap=" scatter plot showing interactions between daily mean minimum relative humidity and daily mean minimum temperature over growing seasons.", message=FALSE, warning=FALSE}
+fig_S4 <- ggplot(dat_seasonal,
+                 aes(x = min_temp, y = disease_severity, color = min_rh)) +
+  geom_point(size = 5,
+             position = position_jitterdodge()) +
+  scale_colour_viridis_c(direction = -1,
+                         name = "Daily mean minimum relative humidity (%)") +
+  scale_fill_viridis_c(direction = -1,
+                       name = "Daily mean minimum relative humidity (%)") +
+  scale_x_continuous(breaks = seq(7.8, 12.5, length.out = 6),
+                     labels = sprintf("%0.1f", seq(7.8, 12.5, length.out = 6))) +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.25),
+                     limits = c(0, 1)) +
+  labs(x = "Daily mean minimum temperature (°C)", y = "Disease severity") +
+  guides(color = guide_colorbar(
+    title.position = "top",
+    title.hjust = 0.5,
+    barwidth = unit(20, "lines"),
+    barheight = unit(0.5, "lines")
+  )) +
+  theme(legend.key = element_blank(),
+        plot.margin = margin(25, 25, 10, 25)) +
+  coord_cartesian(clip = "off",
+                  expand = FALSE)
+fig_S4
+```
+
+
+```{r save-fig-S4, include=FALSE, eval=FALSE}
+ggsave(
+  here("man", "figures/fig_S4.png"),
+  plot = fig_S4,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600
+)
+ggsave(
+  here("man", "figures/fig_S4.eps"),
+  plot = fig_S4,
+  width = 9,
+  height = 9,
+  units = "in",
+  dpi = 600,
+  device =  cairo_ps
+)
+```
+
+
+
+
+
+
+
+
+
