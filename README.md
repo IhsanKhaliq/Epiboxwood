@@ -8,7 +8,7 @@ developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.re
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://www.tidyverse.org/lifecycle/#stable)
 <!-- badges: end -->
 
-# Investigating weather variables affecting boxwood blight epidemiology: insights from multi-year field trials in northern Germany
+# Investigating weather variables driving boxwood blight epidemics: insights from field trials with in Buxus sempervirens 'Suffruticos' in northern Germany between 2006 and 2020
 
 The goal of this project is to determine key weather factors affecting boxwood blight epidemiology from multi-year field trials conducted in northern Germany.  
 
