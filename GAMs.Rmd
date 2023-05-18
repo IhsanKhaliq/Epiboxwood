@@ -195,8 +195,7 @@ set.seed(42)
 ## M1 (min_rh, min_temp, max_ws, mean_rain_per_rainy_day)
 
 Using mean rain per rainy day, and mean values for daily minimum relative
-humidity, daily minimum temperatures, and daily maximum wind speed  over the
-trial duration.
+humidity, daily minimum temperatures, and daily maximum wind speed  over the trial duration.
 
 ```{r m1}
 m1 <- gam(disease_severity ~  s(min_rh, k = 10) + s(min_temp, k = 10) + s(max_ws, k =7) + s(avg_daily_rain, k = 9) + s(total_days, k=9), family = betar(),  method = "REML", data = dat_seasonal)
@@ -205,12 +204,6 @@ summary(m1)
 
 draw(m1, resid_col = TRUE, rug = FALSE, caption = NULL)
 ```
-
-
-Wind speed and trial duration had no significant effect. Increasing temperature
-and humidity has a significant positive linear relationship with disease
-severity. Rainfall effect has a significant positive effect on disease severity,
-but a decreased in disease severity is predicted after 6 mm/rainy day.
 
 
 
@@ -284,10 +277,7 @@ ggsave(
 
 ## M2 (min_rh, min_temp_rain, max_ws_rain, mean_rain_per_rainy_day)
 
-Based on correlation analysis, daily minimum temperature and daily maximum wind
-speed during rainy days has a higher correlation with disease, so use these
-variables instead of mean values for daily minimum temperatures and daily
-maximum wind speed over the trial duration.
+Based on correlation analysis, daily minimum temperature and daily maximum wind speed during rainy days has a higher correlation with disease, so use these variables instead of mean values for daily minimum temperatures and daily maximum wind speed over the trial duration.
 
 ```{r m2}
 m2 <- gam(disease_severity ~  s(min_rh, k = 9) + s(min_temp_rain, k = 9) + s(max_ws_rain, k =7) + s(avg_daily_rain, k = 9) + s(total_days, k=9), family = betar(),  method = "REML", data = dat_seasonal)
@@ -322,9 +312,7 @@ Only rainfall has a significant on disease severity.
 
 ## M4 (RH2, min_temp_rain, max_ws_rain, mean_rain_per_rainy_day)
 
-Use the number of days with relative humidity over 65% as a predictor, which has
-the second highest correlation with the disease after after maximum relative
-humidity during dry conditions.
+Use the number of days with relative humidity over 65% as a predictor, which has the second highest correlation with the disease after after maximum relative humidity during dry conditions.
 
 ```{r m4}
 m4 <- gam(disease_severity ~  s(RH2, k = 9) + s(min_temp_rain, k = 9) + s(max_ws_rain, k =7) + s(avg_daily_rain, k = 9) + s(total_days, k=9), family = betar(),  method = "REML", data = dat_seasonal)
@@ -335,10 +323,7 @@ draw(m4, resid_col = TRUE, rug = FALSE, caption = NULL)
 ```
 
 
-Same output as `m1` and `m2`, but trial duration has a significant effect. This
-means trial duration is important when number of days with relative humidity
-over 65% is used as a predictor, so this predictor is not normalising the data
-for varying trial period.
+Same output as `m1` and `m2`, but trial duration has a significant effect. This means trial duration is important when number of days with relative humidity over 65% is used as a predictor, so this predictor is not normalising the data for varying trial period.
 
 
 
@@ -355,10 +340,7 @@ draw(m5, resid_col = TRUE, rug = FALSE, caption = NULL)
 ```
 
 
-Only rain has no significant effect. Trial duration has a significant effect.
-This means trial duration is important when number of days with relative
-humidity over 65% is used as a predictor, so this predictor is not normalising
-the data for varying trial period.
+Only rain has no significant effect. Trial duration has a significant effect. This means trial duration is important when number of days with relative humidity over 65% is used as a predictor, so this predictor is not normalising the data for varying trial period.
 
 
 
@@ -423,8 +405,7 @@ check(
 ```
 
 
-The `k` values are greater than `edf` and p-values are not significant. More
-data will further increase the fit.
+The `k` values are greater than `edf` and p-values are not significant. More data will further improve the fit.
 
 
 
@@ -526,8 +507,7 @@ check(
 )
 ```
 
-The `k` values are greater than `edf` and p-values are not significant. More
-data will further increase the fit.
+The `k` values are greater than `edf` and p-values are not significant. 
 
 
 ### Check autocorrelation
@@ -605,13 +585,7 @@ fig_S3
 ```
 
 
-The plot for interaction effect between RH and temperature suggests a negative
-interaction effect. This means that the effect of RH on disease_severity changes
-depending on the value of temperature. When temperature is low, an increase in
-RH is associated with a larger increase in disease_severity than when
-temperature is high.
-
-
+The plot for interaction effect between RH and temperature suggests a negative interaction effect. 
 
 ```{r save-figS3, include=FALSE, eval=FALSE}
 ggsave(
@@ -634,13 +608,7 @@ ggsave(
 ```
 
 
-The plot for the interaction effect between max_ws and avg_daily_rain suggests a
-negative interaction effect. This means that the effect of max_ws on
-disease_severity changes depending on the value of avg_daily_rain. When
-avg_daily_rain is low, an increase in max_ws is associated with a larger
-increase in disease_severity than when avg_daily_rain is high. No increase in
-disease severity is recorded, at 6 mm rain per rainy day, with increasing wind
-speed.
+The plot for the interaction effect between max_ws and avg_daily_rain suggests a negative interaction effect. 
 
 
 
