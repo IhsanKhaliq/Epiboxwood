@@ -513,6 +513,45 @@ p3
 
 
 
+## Day counts for rainfall and wind speed categories. 
+
+```{r}
+rain_df <-
+  read_excel("data/dat_nine_years.xlsx",
+             sheet = 3) %>%
+  mutate(julian_day = yday(date)) %>%
+  mutate(year = year(date)) %>%
+  arrange(month(date), day(date), julian_day) %>%
+  relocate(julian_day, .after = date) %>%
+  mutate(ws_category = cut_number(max_ws, 5)) %>%
+  #group_by(year) %>%
+  dplyr::mutate(rain_category = as.factor(
+    case_when(precipitation== 0 ~ "0",
+              precipitation > 0 & precipitation <= 2.5 ~ "(0,2.5]",
+              precipitation > 2.5 & precipitation <=5 ~ "(2.5,5]",
+              precipitation > 5 & precipitation <=7.5 ~ "(5,7.5]",
+              precipitation > 7.5 ~ "(7.50,67.3]"
+              ))) 
+
+
+# Calculate counts for each combination of rain and wind speed categories
+combo_counts <- rain_df %>%
+  group_by(rain_category, ws_category) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  complete(rain_category, ws_category, fill = list(count = 0)) 
+
+
+
+# Create a custom plot with text labels
+p4 <- ggplot(combo_counts, aes(x = fct_relevel(rain_category,"(0,2.5]", "(2.5,5]", "(5,7.5]", "(7.50,67.3]", after = Inf), y = ws_category, label = count)) +
+  geom_text(size = 5) +
+  labs(x = "Daily total rainfall (mm)", y = "Daily maximum wind speed (m/s)") +
+  theme_few() 
+p4
+```
+
+
 
 
 
