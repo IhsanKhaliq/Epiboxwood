@@ -448,6 +448,27 @@ p1
 ```
 
 
+### Plot RH data for the entire 9-year duration 
+
+
+```{r}
+rh_df <- daily_df %>%
+  pivot_longer(
+    cols = c("min_rh", "max_rh", "mean_rh"),
+    names_to = "rh_type",
+    values_to = "value"
+  )
+
+p2 <- ggplot(rh_df, aes(julian_day, value, color = rh_type)) +
+   geom_point(position = position_jitterdodge(jitter.width = 0.01), size = 2) +
+  scale_y_continuous(breaks = seq(from = 0, to = 100, by = 25), limits = c(0, 100)) +
+    theme_few() + 
+  labs(x = "Julian day", y = "Relative humidity (%)", color = "RH type") 
+
+p2
+```
+
+
 
 
 
