@@ -36,6 +36,7 @@ library("kableExtra")
 library("tidyr")
 library("lubridate")
 library("readxl")
+library("ggthemes")
 library("ggbeeswarm")
 
 theme_set(theme_pubclean(base_family = "Arial", base_size = 14))
@@ -401,7 +402,50 @@ ggsave(
 ```
 
 
+## Plot weather data for the entire 9-year duration 
 
+### Import data
+
+```{r}
+daily_df <-
+  read_excel("data/dat_nine_years.xlsx",
+             sheet = 3) %>% 
+  mutate(julian_day = yday(date)) %>%
+  arrange(month(date), day(date), year, julian_day, date) %>%
+  relocate(julian_day, .after = date) %>%
+  group_by(julian_day) %>%
+  summarise(
+    min_rh = round(mean(min_rh), 1),
+    max_rh = round(mean(max_rh), 1),
+    mean_rh = round(mean(mean_rh), 1),
+    min_temp = round(mean(min_temp), 1),
+    max_temp = round(mean(max_temp), 1),
+    mean_temp = round(mean(mean_temp), 1),
+    max_ws = round(mean(max_ws), 1),
+    mean_rain = round(mean(precipitation), 1),
+    total_rain = round(sum(precipitation), 1)
+  )
+```
+
+
+### Plot temperature data for the entire 9-year duration 
+
+```{r}
+temp_df <- daily_df %>%
+  pivot_longer(
+    cols = c("min_temp", "max_temp", "mean_temp"),
+    names_to = "temp_type",
+    values_to = "value"
+  )
+
+p1 <- ggplot(temp_df, aes(julian_day, value, color = temp_type)) +
+   geom_point(position = position_jitterdodge(jitter.width = 0.01), size = 2) +
+  scale_y_continuous(breaks = seq(from = -3.2, to = 28, by = 6), limits = c(-3.2, 28)) +
+    theme_few() + 
+  labs(x = "Julian day", y = "Temperature (°C)", color = "Temperature type") 
+
+p1
+```
 
 
 
