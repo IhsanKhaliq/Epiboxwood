@@ -212,7 +212,9 @@ draw(m1, resid_col = TRUE, rug = FALSE, caption = NULL)
 p1 <- draw(m1, select = "s(min_rh)", rug = FALSE, ) +
   labs(x = "Mean minimum RH (%)", title = "", caption = NULL) +
   scale_x_continuous(breaks = seq(29.7, 67.9, length.out = 6),
-                     labels = sprintf("%0.1f", seq(29.7, 67.9, length.out = 6))) + theme_bw()
+                     labels = sprintf("%0.1f", seq(29.7, 67.9, length.out = 6))) +  annotate("text", x = 45, y = 2, label = "p<0.0001") + 
+  theme_few()
+
 
 p2 <- draw(m1, select = "s(min_temp)", rug = FALSE) +
   labs(
@@ -222,7 +224,9 @@ p2 <- draw(m1, select = "s(min_temp)", rug = FALSE) +
     caption = NULL
   ) +
   scale_x_continuous(breaks = seq(7.8, 12.5, length.out = 6),
-                     labels = sprintf("%0.1f", seq(7.8, 12.5, length.out = 6))) + theme_bw()
+                     labels = sprintf("%0.1f", seq(7.8, 12.5, length.out = 6))) + 
+  annotate("text", x = 9.7, y = 2, label = "p<0.0001") + 
+  theme_few()
 
 
 p3 <- draw(m1, select = "s(max_ws)", rug = FALSE) +
@@ -233,13 +237,20 @@ p3 <- draw(m1, select = "s(max_ws)", rug = FALSE) +
     caption = NULL
   ) +
   scale_x_continuous(breaks = seq(2.8, 3.7, length.out = 5),
-                     labels = sprintf("%0.1f", seq(2.8, 3.7, length.out = 5))) + theme_bw()
+                     labels = sprintf("%0.1f", seq(2.8, 3.7, length.out = 5))) + 
+   annotate("text", x = 3.2, y = 1.3, label = "p=0.5954") + 
+  theme_few()
+
 
 
 p4 <- draw(m1, select = "s(avg_daily_rain)", rug = FALSE) +
   labs(x = "Mean rain per rainy day (mm)", title = "", caption = NULL) +
   scale_x_continuous(breaks = seq(2.8, 6.5, length.out = 6),
-                     labels = sprintf("%0.1f", seq(2.8, 6.5, length.out = 6))) + theme_bw()
+                     labels = sprintf("%0.1f", seq(2.8, 6.5, length.out = 6))) + 
+   annotate("text", x = 4.1, y = 3.2, label = "p<0.0001") + 
+  theme_few()
+
+
 p5 <- draw(m1, select = "s(total_days)", rug = FALSE) +
   labs(
     x = "Trial duration (days)",
@@ -248,7 +259,9 @@ p5 <- draw(m1, select = "s(total_days)", rug = FALSE) +
     caption = NULL
   ) +
   scale_x_continuous(breaks = seq(18, 200, length.out = 6),
-                     labels = as.character(as.integer(seq(18, 200, length.out = 6)))) + theme_bw()
+                     labels = as.character(as.integer(seq(18, 200, length.out = 6)))) +  annotate("text", x = 90, y = 1.5, label = "p=0.0839") + 
+  theme_few() 
+
 fig_2 <- p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 3, nrow = 2)
 ```
 
