@@ -455,7 +455,9 @@ p1 <- draw(mod1,  rug = FALSE,  select = smooths(mod1)[1]) +
     caption = NULL
   ) +
   scale_y_continuous(breaks = seq(7.8, 12.5, length.out = 6),
-                     labels = sprintf("%0.1f", seq(7.8, 12.5, length.out = 6)))
+                     labels = sprintf("%0.1f", seq(7.8, 12.5, length.out = 6))) +
+   annotate("text", x = 60, y = 10.6, label = "p<0.0001") 
+  
 
 p2 <- draw(mod1,  rug = FALSE,  select = smooths(mod1)[2]) +
   labs(
@@ -465,7 +467,8 @@ p2 <- draw(mod1,  rug = FALSE,  select = smooths(mod1)[2]) +
     caption = NULL
   ) +
   scale_y_continuous(breaks = seq(2.9, 6.5, length.out = 5),
-                     labels = sprintf("%0.1f", seq(2.9, 6.5, length.out = 5)))
+                     labels = sprintf("%0.1f", seq(2.9, 6.5, length.out = 5))) +
+   annotate("text", x = 3.5, y = 5.05, label = "p<0.0001") 
 
 
 fig_3 <- p1 + p2 + plot_layout(ncol = 2)
