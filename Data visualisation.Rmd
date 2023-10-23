@@ -469,6 +469,49 @@ p2
 ```
 
 
+## Plot days wiht RH>80 & RH>90 
+
+```{r}
+# Load the data and perform initial processing
+weather_dat_exposure <- read_excel("data/weather_20_minutes.xlsx", sheet = 1) %>%
+  na.omit() %>%
+  mutate(year = lubridate::year(date)) %>%
+  mutate(julian_day = yday(date)) %>%
+  mutate(year = as.factor(year)) %>%
+  relocate(julian_day, .after = date) %>%
+  arrange(month(date), day(date), julian_day)
+
+# Create two data frames: ">80" and ">90"
+df_greater_than_80 <- weather_dat_exposure %>%
+  filter(humidity > 80) %>%
+  mutate(humidity_catog = ">80%")
+
+df_greater_than_90 <- weather_dat_exposure %>%
+  filter(humidity > 90) %>%
+  mutate(humidity_catog = ">90%")
+
+# Bind the two data frames together
+combined_df <- bind_rows(df_greater_than_80, df_greater_than_90)
+
+
+# Count each RH category
+weather_dat_exposure_rh <- combined_df %>%
+  group_by(julian_day, humidity_catog) %>%
+  summarize(humidity_count = n()*20/60,
+            humidity_count_h = humidity_count/9) 
+
+
+
+
+p3 <- ggplot(weather_dat_exposure_rh, aes(julian_day, humidity_count_h, color = humidity_catog)) +
+   geom_point() +
+    theme_few() + 
+  labs(x = "Julian day", y = "Hours over threshold per Julian day", color = "Relative humidity") 
+
+p3
+```
+
+
 
 
 
